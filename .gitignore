@@ -1,0 +1,26 @@
+# 비밀값
+.env
+*.env
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 로컬 DB와 업로드
+*.db
+server/uploads/
+
+# Android
+app/.gradle/
+app/build/
+app/**/build/
+app/local.properties
+app/.idea/
+*.apk
+
+# OS
+.DS_Store
+Thumbs.db
