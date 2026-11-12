@@ -55,6 +55,17 @@ python -c "import secrets,base64;print(base64.b64encode(secrets.token_bytes(32))
 
 기기는 처음 로그인한 UUID에 묶인다. 다른 UUID로 로그인하면 403 `DEVICE_MISMATCH`(시드를 다시 돌리면 풀린다).
 
+## 그 밖의 명령
+
+```powershell
+python -m app.purge     # pii_archive에서 보존 기간(keep_until)이 지난 행 파기 (= POST /admin/purge-expired)
+python -m app.report    # 정량 결과 리포트 → report/result.md (임시 SQLite 사용, dev.db와 .env 키를 쓰지 않음)
+```
+
+- 서버를 켰을 때 "오늘 배정이 0건입니다" 경고가 나오면 `python -m app.seed` 또는 `POST /admin/reset-demo`. 배정은 시드한 날짜에만 유효하므로 날짜가 바뀌면 다시 시드해야 기사가 로그인할 수 있다.
+- 비밀번호를 10분 안에 5번 틀리면 그 ID는 429 `TOO_MANY_ATTEMPTS`로 잠긴다. 10분 기다리거나 `POST /admin/reset-demo`.
+- `GET /admin/alerts?minutes=60`: 최근 의심 시도를 기사별로 센다.
+
 ## 테스트
 
 ```powershell

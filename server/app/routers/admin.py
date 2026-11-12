@@ -4,13 +4,16 @@
 """
 from __future__ import annotations
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
-from ..config import get_settings, iso_kst, today_kst
+from ..config import get_settings, iso_kst, now_kst, today_kst
 from ..db import access_logs, assignments, drivers, get_engine, orders, pii_archive, recipient_pii
 from ..errors import ApiError
+from ..purge import purge_expired
 from ..security import require_admin
 from ..seed import load_demo_data, reset_and_seed
 
@@ -31,6 +34,12 @@ def reset_demo():
                 removed += 1
 
     return {"ok": True, "drivers": len(data["drivers"]), "orders": created, "photos_removed": removed}
+
+
+@router.post("/purge-expired")
+def purge_expired_archive():
+    """pii_archive 에서 보존 기간(keep_until)이 지난 행을 지운다."""
+    return purge_expired()
 
 
 class AssignRequest(BaseModel):
@@ -95,6 +104,29 @@ def logs(limit: int = Query(50, ge=1, le=500)):
          "action": r["action"], "result": r["result"], "at": iso_kst(r["at"])}
         for r in rows
     ]
+
+
+ALERT_RESULTS = ("NOT_ASSIGNED", "DEVICE_MISMATCH", "INVALID_CREDENTIALS", "TOO_MANY_ATTEMPTS")
+
+
+@router.get("/alerts")
+def alerts(minutes: int = Query(60, ge=1, le=1440)):
+    """최근 N분 동안의 의심스러운 시도를 기사별로 센다(access_logs 기준, 개인정보 없음)."""
+    since = now_kst() - timedelta(minutes=minutes)
+    with get_engine().connect() as conn:
+        rows = conn.execute(
+            select(access_logs.c.driver_id, access_logs.c.result, func.count().label("n"))
+            .where(access_logs.c.at >= since, access_logs.c.result.in_(ALERT_RESULTS))
+            .group_by(access_logs.c.driver_id, access_logs.c.result)
+        ).all()
+
+    by_driver: dict[str, dict] = {}
+    for r in rows:
+        entry = by_driver.setdefault(r.driver_id, {"driver_id": r.driver_id, **{k: 0 for k in ALERT_RESULTS}})
+        entry[r.result] = r.n
+    items = [{**e, "total": sum(e[k] for k in ALERT_RESULTS)} for e in by_driver.values()]
+    items.sort(key=lambda e: (-e["total"], e["driver_id"]))
+    return {"minutes": minutes, "since": iso_kst(since), "alerts": items}
 
 
 @router.get("/db-peek/{order_no}")

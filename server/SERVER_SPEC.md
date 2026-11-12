@@ -100,7 +100,7 @@ QR_Security/
 | `recipient_pii` | `order_id` INT PK, FK→`orders.id` · `name_enc` TEXT · `phone_enc` TEXT · `address_enc` TEXT · `safe_number` VARCHAR(20) | 조회용. `*_enc`는 §5 형식의 암호문 |
 | `pii_archive` | `id` INT PK 자동증가 · `order_id` INT · `name_enc` TEXT · `phone_enc` TEXT · `address_enc` TEXT · `archived_at` DATETIME · `keep_until` DATETIME | 보존용. **API로 복호화해서 보여주지 않는다** |
 | `assignments` | `id` INT PK 자동증가 · `driver_id` FK→`drivers` · `order_id` FK→`orders` · `work_date` DATE · UNIQUE(`order_id`, `work_date`) | 오늘 배정 = 로그인·조회 조건 |
-| `access_logs` | `id` INT PK 자동증가 · `driver_id` VARCHAR(10) · `order_id` INT NULL · `action` VARCHAR(20) · `result` VARCHAR(30) · `at` DATETIME | `action` = `LOGIN` / `SCAN` / `COMPLETE`. `result` = `OK` 또는 오류 코드. 없는 ID로 로그인 시도한 것도 남기므로 `driver_id`에 FK 없음 |
+| `access_logs` | `id` INT PK 자동증가 · `driver_id` VARCHAR(10) · `order_id` INT NULL · `action` VARCHAR(20) · `result` VARCHAR(30) · `at` DATETIME | `action` = `LOGIN` / `SCAN` / `COMPLETE` / `PURGE`(관리자 파기, `driver_id`=`ADMIN`). `result` = `OK` 또는 오류 코드. 없는 ID로 로그인 시도한 것도 남기므로 `driver_id`에 FK 없음 |
 
 ### 배송 완료 트리거 (DB가 한다)
 
@@ -186,6 +186,8 @@ END;
 ```
 모든 시도를 `access_logs`에 남긴다(`LOGIN`, 결과 코드).
 
+**시도 제한 (위 1번보다 먼저 검사)**: 같은 `driver_id`로 마지막 로그인 성공 이후, 최근 10분 안에 `INVALID_CREDENTIALS`가 5번 이상이면 → 429 `TOO_MANY_ATTEMPTS`, message = `"로그인 시도가 너무 많습니다. 10분 뒤에 다시 시도하세요."` 잠긴 동안에는 비밀번호가 맞아도 거부한다. `access_logs`로 세므로 `/admin/reset-demo`를 하면 풀린다.
+
 ### 7.3 `GET /scan/{qr_token}` (기사 인증)
 
 1. 토큰이 없으면 → 404 `ORDER_NOT_FOUND`
@@ -255,6 +257,8 @@ END;
 | `POST /admin/assign` | 요청 `{"driver_id": "D001", "order_no": "..."}` → 오늘 배정 추가. 오늘 다른 기사에게 배정돼 있으면 이 기사로 옮긴다 | 200 `{"driver_id", "order_no", "work_date", "previous_driver_id"}`. 없는 기사 404 `DRIVER_NOT_FOUND`, HUB 403 `ROLE_FORBIDDEN`, 없는 주문 404 `ORDER_NOT_FOUND`, 완료된 주문 409 `ALREADY_DELIVERED` |
 | `POST /admin/drivers/{driver_id}/reset-device` | `device_uuid`를 비운다(다른 폰으로 다시 묶기) | 200 `{"driver_id", "device_uuid": null}`. 없는 기사 404 `DRIVER_NOT_FOUND` |
 | `GET /admin/logs?limit=50` | 최근 `access_logs`(개인정보 없음), 최신순, `limit` 1~500 | 200 `[{"id", "driver_id", "order_id", "order_no", "action", "result", "at"}]` |
+| `POST /admin/purge-expired` | `pii_archive`에서 `keep_until` < 지금(KST)인 행을 지운다(보존 기간 만료 파기). `python -m app.purge`와 같다. `access_logs`에 `driver_id`=`ADMIN`, `action`=`PURGE`, `result`=`OK`로 남긴다 | 200 `{"purged": N, "at": "2026-11-14T14:03:22+09:00"}` |
+| `GET /admin/alerts?minutes=60` | 최근 N분(1~1440) 동안 `access_logs`의 `NOT_ASSIGNED`·`DEVICE_MISMATCH`·`INVALID_CREDENTIALS`·`TOO_MANY_ATTEMPTS`를 기사별로 센다(개인정보 없음) | 200 `{"minutes", "since", "alerts": [{"driver_id", "NOT_ASSIGNED", "DEVICE_MISMATCH", "INVALID_CREDENTIALS", "TOO_MANY_ATTEMPTS", "total"}]}`, `total` 큰 순 |
 | `GET /admin/db-peek/{order_no}` | 그 건의 `recipient_pii`·`pii_archive` 행을 **암호문 그대로** 보여준다(복호화 금지). 영상에서 "DB에는 암호문만 있다"를 보여주는 용도 | 200 `{"order_no", "order_id", "status", "recipient_pii": {열 그대로} \| null, "pii_archive": [{열 그대로}]}`. 없는 주문 404 `ORDER_NOT_FOUND` |
 
 ### 7.11 그 밖
@@ -278,6 +282,7 @@ END;
 | 410 | `PII_REMOVED` | 완료된 건을 스캔 |
 | 413 | `FILE_TOO_LARGE` | 사진 10MB 초과 |
 | 415 | `UNSUPPORTED_MEDIA` | 사진 형식 아님 |
+| 429 | `TOO_MANY_ATTEMPTS` | 최근 10분 안에 비밀번호를 5번 이상 틀린 ID의 로그인 |
 | 500 | `PII_NOT_REMOVED` | 트리거가 개인정보를 안 옮김 |
 
 ---

@@ -53,3 +53,26 @@ SERVER_SPEC §7.10 표에 응답 형식을, §7 오류 코드 표에 `404 DRIVER
 - `GET /track/{order_no}`: 배송 전에는 `delivered_at`이 `null`이다.
 - `POST /deliveries/.../complete`: content-type뿐 아니라 파일 시작 바이트(JPEG/PNG 시그니처)도 확인한다. 맞지 않으면 415 `UNSUPPORTED_MEDIA`. `orders.photo_path`에는 파일 이름만 저장한다(예: `SC-20261114-0001.png`).
 - 사진은 DB 커밋이 성공한 뒤에만 `UPLOAD_DIR`에 최종 저장한다(500 `PII_NOT_REMOVED`로 롤백되면 남기지 않는다).
+
+---
+
+## 4. [추가] 로그인 시도 제한 — 429 `TOO_MANY_ATTEMPTS`
+
+- `POST /auth/login`: 같은 `driver_id`로 마지막 로그인 성공 이후, 최근 10분 안에 `INVALID_CREDENTIALS`가 5번 이상이면 429 `TOO_MANY_ATTEMPTS`. 메시지 "로그인 시도가 너무 많습니다. 10분 뒤에 다시 시도하세요." 잠긴 동안에는 비밀번호가 맞아도 거부한다.
+- 새 테이블 없이 `access_logs`로 센다. `/admin/reset-demo`를 하면 풀린다. 잠긴 동안의 시도는 `TOO_MANY_ATTEMPTS`로 기록되고 실패 횟수에는 더해지지 않으므로, 마지막으로 틀린 뒤 10분이 지나면 풀린다.
+- 없는 ID도 똑같이 제한된다(ID가 있는지 없는지 응답으로 구분되지 않게).
+- **앱 영향(한승일)**: 로그인 화면에서 새 코드 429 `TOO_MANY_ATTEMPTS`가 올 수 있다. 오류 본문 모양은 다른 오류와 같으므로 `message`를 그대로 보여주면 된다.
+- 한계: 다른 사람이 일부러 5번 틀려서 특정 기사를 10분 동안 못 들어오게 할 수 있다. 시연 중에 걸리면 `/admin/reset-demo`.
+- SERVER_SPEC §7.2와 오류 코드 표에 반영.
+
+## 5. [추가] 보존 기간 만료 파기 — `POST /admin/purge-expired`
+
+- `pii_archive`에서 `keep_until` < 지금(KST)인 행을 지우고 200 `{"purged": N, "at": "..."}`. `python -m app.purge`도 같은 동작.
+- `access_logs`에 `driver_id`=`ADMIN`, `action`=`PURGE`, `result`=`OK`. (`action` 값에 `PURGE`가 추가됨. DB 열은 그대로.)
+- 관리자 전용이라 앱·웹 영향 없음. SERVER_SPEC §7.10 표에 반영.
+
+## 6. [추가] 의심 시도 집계 — `GET /admin/alerts?minutes=60`
+
+- 최근 N분(1~1440) 동안 `access_logs`의 `NOT_ASSIGNED`·`DEVICE_MISMATCH`·`INVALID_CREDENTIALS`·`TOO_MANY_ATTEMPTS`를 기사별로 센다. `total` 큰 순.
+- 한계: 토큰은 맞는데 `X-Device-UUID`가 다른 스캔·완료 요청의 `DEVICE_MISMATCH`는 인증 단계에서 거부되어 `access_logs`에 남지 않는다. 그래서 여기에는 **로그인 때의** `DEVICE_MISMATCH`만 집계된다.
+- 관리자 전용이라 앱·웹 영향 없음. SERVER_SPEC §7.10 표에 반영.

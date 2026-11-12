@@ -16,6 +16,7 @@ MESSAGES = {
     "FILE_TOO_LARGE": "사진은 10MB 이하만 올릴 수 있습니다.",
     "UNSUPPORTED_MEDIA": "사진은 JPEG 또는 PNG만 올릴 수 있습니다.",
     "PII_NOT_REMOVED": "개인정보 삭제가 확인되지 않아 배송 완료를 취소했습니다.",
+    "TOO_MANY_ATTEMPTS": "로그인 시도가 너무 많습니다. 10분 뒤에 다시 시도하세요.",
     "DRIVER_NOT_FOUND": "기사를 찾을 수 없습니다.",
 }
 

@@ -1,6 +1,7 @@
 """FastAPI 앱: 라우터 등록, 오류 처리, CORS."""
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -10,19 +11,45 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 
-from .config import BASE_DIR, get_settings
-from .db import ensure_sqlite_schema, get_engine
+from .config import BASE_DIR, get_settings, today_kst
+from .db import assignments, ensure_sqlite_schema, get_engine
 from .errors import ApiError
 from .routers import admin, auth, deliveries, orders, scan, track
 
 WEB_DIR = BASE_DIR.parent / "web"  # 주승윤의 주문자 웹(있을 때만 서빙)
 
 
+logger = logging.getLogger("uvicorn.error")  # uvicorn 콘솔에 같은 형식으로 찍힌다
+
+
+def warn_if_no_assignments_today() -> bool:
+    """오늘(KST) 배정이 0건이면 콘솔에 경고한다(이 상태에서는 기사가 아무도 로그인하지 못한다)."""
+    today = today_kst()
+    try:
+        with get_engine().connect() as conn:
+            count = conn.execute(
+                select(func.count()).select_from(assignments).where(assignments.c.work_date == today)
+            ).scalar_one()
+    except SQLAlchemyError:
+        logger.warning("오늘 배정 건수를 확인하지 못했습니다. DB 연결과 스키마를 확인하세요.")
+        return False
+    if count == 0:
+        logger.warning(
+            "오늘(%s) 배정이 0건입니다. python -m app.seed 또는 POST /admin/reset-demo를 실행하세요.",
+            today.isoformat(),
+        )
+        return True
+    return False
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     get_settings()  # 환경 변수가 빠졌으면 시작할 때 바로 알린다
     ensure_sqlite_schema(get_engine())  # SQLite가 비어 있으면 스키마만 만든다(데이터는 seed)
+    warn_if_no_assignments_today()
     yield
 
 
