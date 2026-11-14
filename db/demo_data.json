@@ -1,0 +1,26 @@
+{
+  "drivers": [
+    {"driver_id": "H001", "name": "이허브", "password": "demo1234", "role": "HUB"},
+    {"driver_id": "D001", "name": "김담당", "password": "demo1234", "role": "DRIVER"},
+    {"driver_id": "D002", "name": "박다른", "password": "demo1234", "role": "DRIVER"},
+    {"driver_id": "D003", "name": "최휴무", "password": "demo1234", "role": "DRIVER"}
+  ],
+  "orders": [
+    {"name": "홍길동", "phone": "010-0000-0001", "address": "가상로 12, 101동 1001호",
+     "region": "인천 연수구 송도동", "assign_to": "D001"},
+    {"name": "임꺽정", "phone": "010-0000-0002", "address": "가상로 34, 202동 502호",
+     "region": "인천 연수구 송도동", "assign_to": "D001"},
+    {"name": "성춘향", "phone": "010-0000-0003", "address": "가상로 56, 303동 1203호",
+     "region": "인천 연수구 송도동", "assign_to": "D001"},
+    {"name": "전우치", "phone": "010-0000-0004", "address": "가상로 78, 가상빌라 2층",
+     "region": "인천 연수구 송도동", "assign_to": "D001"},
+    {"name": "이몽룡", "phone": "010-0000-0005", "address": "가상로 90, 105동 701호",
+     "region": "인천 연수구 동춘동", "assign_to": "D002"},
+    {"name": "심청", "phone": "010-0000-0006", "address": "가상로 101, 가상아파트 3동 304호",
+     "region": "인천 연수구 동춘동", "assign_to": "D002"},
+    {"name": "남궁민준", "phone": "010-0000-0007", "address": "가상로 123, 가상오피스텔 808호",
+     "region": "인천 연수구 동춘동", "assign_to": "D002"},
+    {"name": "황진이", "phone": "010-0000-0008", "address": "가상로 145, 401동 1502호",
+     "region": "인천 연수구 옥련동"}
+  ]
+}

@@ -2,7 +2,6 @@
 
 > Claude Code에게 주는 작업 명세서다. 담당: **이승엽 (중앙 서버)**.
 > 앱(한승일), DB 스키마·주문자 웹(주승윤)은 이 작업 범위가 아니다.
-> 일정: 11/12(목) 17:00 API 공유 → 11/13(금) 23:00 앱 연결 → **11/14(토) 13:00 코드 동결** → 11/15(일) 제출.
 
 ---
 
@@ -159,15 +158,15 @@ END;
 
 | # | 메서드·경로 | 쓰는 쪽 | 인증 |
 |---|---|---|---|
-| 1 | `GET /health` | 모두 | 없음 |
-| 2 | `POST /auth/login` | 앱 | 없음 |
-| 3 | `GET /scan/{qr_token}` | 앱 | 기사 |
-| 4 | `POST /deliveries/{qr_token}/complete` | 앱 | 기사 |
-| 5 | `GET /me/assignments` | 앱 (선택) | 기사 |
-| 6 | `POST /orders` | 관리자 | 관리자 |
-| 7 | `GET /qr/{order_no}` | 브라우저 | 없음 (개인정보 없음) |
-| 8 | `GET /labels/{order_no}` | 브라우저 | 없음 (개인정보 없음) |
-| 9 | `GET /track/{order_no}` | 주문자 웹 | 없음 (개인정보 없음) |
+| 1 | 모두 | 없음 |
+| 2 | 앱 | 없음 |
+| 3 | 앱 | 기사 |
+| 4 | 앱 | 기사 |
+| 5 | 앱 (선택) | 기사 |
+| 6 | 관리자 | 관리자 |
+| 7 | 브라우저 | 없음 (개인정보 없음) |
+| 8 | 브라우저 | 없음 (개인정보 없음) |
+| 9 | 주문자 웹 | 없음 (개인정보 없음) |
 | 10 | `/admin/...` (§7.10) | 관리자 | 관리자 |
 
 ### 7.1 `GET /health`
@@ -304,14 +303,13 @@ END;
 
 ## 9. 작업 순서와 완료 기준
 
-| 단계 | 언제까지 | 할 일 | 완료 기준 |
-|---|---|---|---|
-| 1 | 11/12(목) 17:00 | 골격, config, SQLite 스키마, crypto, security, seed, `/health`, `/auth/login`, `/scan`, `/track`, README | `uvicorn` 실행 → `/docs`에서 D001 로그인 → 스캔 성공. **§7을 팀 단톡에 공유** |
-| 2 | 11/12(목) 밤 | `/deliveries/.../complete`, `/orders`, `/qr`, `/labels`, `/me/assignments`, 관리자 API, `/web` 서빙 | 완료 후 재스캔하면 410 |
-| 3 | 11/13(금) 17:30 | `tests/test_flow.py` §10 전부 | `pytest` 전부 통과 |
-| 4 | 11/13(금) 밤 | 주승윤의 `schema.sql`로 MySQL 전환, §10 흐름을 수동으로 다시 확인 | MySQL에서 완료 → `recipient_pii`가 비고 `pii_archive`에 1행. 문제가 있으면 `schema.sql`을 고치지 말고 `CHANGES.md`에 적는다 |
-| 5 | 11/13(금) 23:00 | Cloudflare 터널로 한승일 폰과 연결 | 앱에서 로그인 → 스캔 성공 |
-| — | 11/14(토) 13:00 | **코드 동결** | 이후 버그 수정만 |
+| 단계 | 할 일 | 완료 기준 |
+|---|---|---|
+| 1 | 골격, config, SQLite 스키마, crypto, security, seed, `/health`, `/auth/login`, `/scan`, `/track`, README | `uvicorn` 실행 → `/docs`에서 D001 로그인 → 스캔 성공. **§7을 팀 단톡에 공유** |
+| 2 | `/deliveries/.../complete`, `/orders`, `/qr`, `/labels`, `/me/assignments`, 관리자 API, `/web` 서빙 | 완료 후 재스캔하면 410 |
+| 3 | `tests/test_flow.py` §10 전부 | `pytest` 전부 통과 |
+| 4 | 주승윤의 `schema.sql`로 MySQL 전환, §10 흐름을 수동으로 다시 확인 | MySQL에서 완료 → `recipient_pii`가 비고 `pii_archive`에 1행. 문제가 있으면 `schema.sql`을 고치지 말고 `CHANGES.md`에 적는다 |
+| 5 | Cloudflare 터널로 한승일 폰과 연결 | 앱에서 로그인 → 스캔 성공 |
 
 ---
 

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>배송 조회 · seungcurity 안심 운송장</title>
+<meta name="description" content="주문번호로 배송 상태와 내 개인정보가 어떻게 보호되고 있는지 확인합니다.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f5f4a'/%3E%3Cpath d='M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM18 18h2v2h-2zM21 21h2v2h-2z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="./">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8"/>
+        <path d="M9 9h6v6H9zM17 9h6v6h-6zM9 17h6v6H9zM18 18h2v2h-2zM21 21h2v2h-2z"/>
+      </svg>
+      <span>seungcurity</span>
+    </a>
+    <nav class="nav" aria-label="메뉴">
+      <a href="order.html">주문하기</a>
+      <a href="./" aria-current="page">배송 조회</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>내 택배, 지금 어디쯤일까요?</h1>
+    <p class="lead">운송장에는 QR만 인쇄됩니다. 이름·전화번호·주소는 담당 기사에게만, 배송이 끝날 때까지만 보입니다.</p>
+
+    <form id="search" class="search" autocomplete="off" novalidate>
+      <label for="order-no">주문번호</label>
+      <div class="search-row">
+        <input id="order-no" name="order_no" type="text" inputmode="text" maxlength="20"
+               placeholder="SC-20261114-0001" spellcheck="false" autocapitalize="characters" required>
+        <button type="submit" id="submit">조회</button>
+      </div>
+      <p id="form-msg" class="form-msg" role="alert" hidden></p>
+    </form>
+  </section>
+
+  <section id="result" class="result" hidden aria-live="polite">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="eyebrow">주문번호</div>
+          <div id="r-order-no" class="order-no"></div>
+        </div>
+        <span id="r-badge" class="badge"></span>
+      </div>
+
+      <ol id="steps" class="steps" aria-label="배송 단계">
+        <li data-step="READY"><span class="dot"></span><span class="step-name">발송 준비</span></li>
+        <li data-step="AT_HUB"><span class="dot"></span><span class="step-name">허브 도착</span></li>
+        <li data-step="OUT_FOR_DELIVERY"><span class="dot"></span><span class="step-name">배송 중</span></li>
+        <li data-step="DELIVERED"><span class="dot"></span><span class="step-name">배송 완료</span></li>
+      </ol>
+
+      <p id="r-desc" class="desc"></p>
+      <p id="r-delivered" class="delivered" hidden>완료 시각 <time id="r-delivered-at"></time></p>
+    </div>
+
+    <div id="pii" class="card pii">
+      <div class="pii-icon" aria-hidden="true">
+        <svg id="pii-icon-open" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.4 3.1 8.2 7.5 9.5 4.4-1.3 7.5-5.1 7.5-9.5V6L12 3Z"/><path class="stroke" d="m8.8 12 2.3 2.3 4.2-4.5"/></svg>
+        <svg id="pii-icon-locked" viewBox="0 0 24 24" hidden><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path class="stroke" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+      </div>
+      <div>
+        <div class="eyebrow">내 개인정보</div>
+        <h2 id="pii-title"></h2>
+        <p id="pii-detail" class="pii-detail"></p>
+      </div>
+    </div>
+
+    <p class="live"><span class="live-dot" id="live-dot"></span><span id="live-text"></span></p>
+  </section>
+
+  <section class="how">
+    <h2>개인정보는 이렇게 지켜집니다</h2>
+    <ul class="how-grid">
+      <li>
+        <h3>운송장에는 QR만</h3>
+        <p>QR 안에는 무작위 토큰만 들어 있습니다. 상자를 누가 봐도 이름·전화번호·주소를 알 수 없습니다.</p>
+      </li>
+      <li>
+        <h3>필요한 사람에게 필요한 만큼</h3>
+        <p>허브 직원은 권역만, 오늘 이 택배를 맡은 기사만 가린 이름·안심번호·주소를 봅니다. 다른 기사는 볼 수 없습니다.</p>
+      </li>
+      <li>
+        <h3>배송이 끝나면 즉시 차단</h3>
+        <p>배송 완료 순간 조회용 개인정보가 지워져, 같은 QR을 다시 찍어도 아무것도 나오지 않습니다.</p>
+      </li>
+      <li>
+        <h3>저장은 암호문으로만</h3>
+        <p>개인정보는 AES-256으로 암호화해 저장하고, 법정 보존분은 분리 보관한 뒤 기간이 지나면 파기합니다.</p>
+      </li>
+    </ul>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">seungcurity · 2026 주제탐구 발표 시연용 · 화면의 데이터는 모두 가상입니다</div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
